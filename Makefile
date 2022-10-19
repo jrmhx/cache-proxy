@@ -15,8 +15,11 @@ proxy.o: proxy.c
 cache.o: cache.c cache.h
 	$(CC) $(CFLAGS) -c cache.c
 
-proxy: proxy.o cache.o csapp.o
-	$(CC) $(CFLAGS) proxy.o cache.o csapp.o -o proxy $(LDFLAGS)
+sbuf.o: sbuf.c sbuf.h
+	$(CC) $(CFLAGS) -c sbuf.c
+
+proxy: proxy.o cache.o csapp.o sbuf.o
+	$(CC) $(CFLAGS) proxy.o cache.o csapp.o sbuf.o -o proxy $(LDFLAGS)
 
 tiny:
 	(cd tiny; make clean; make)
