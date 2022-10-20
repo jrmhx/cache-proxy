@@ -53,6 +53,7 @@ int main(int argc, char **argv) {
     printf(">cilentfd %d in queue \n", connfd);
     printf(">Accepted connection from (%s, %s)\n", client_hostname, client_port);
   }
+  sbuf_deinit(&sbuf);
   exit(0);
 }
 
