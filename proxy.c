@@ -26,17 +26,17 @@ void *thread(void *vargp);
 int main(int argc, char **argv) {
   int i, listenfd, connfd;
   socklen_t clientlen;
-  struct sockaddr_storage clientaddr;  /* Enough space for any address */  //line:netp:echoserveri:sockaddrstorage
+  struct sockaddr_storage clientaddr; 
   char client_hostname[MAXLINE], client_port[MAXLINE];
   pthread_t tid;
 
-//  if (argc != 2) {
-//    fprintf(stderr, "usage: %s <port>\n", argv[0]);
-//    exit(0);
-//  }
+  if (argc != 2) {
+    fprintf(stderr, "usage: %s <port>\n", argv[0]);
+    exit(0);
+  }
   
-    argv = malloc(2 * sizeof(char *));
-    argv[1] = "9090";
+    // argv = malloc(2 * sizeof(char *));
+    // argv[1] = "9090";
     
     
   listenfd = Open_listenfd(argv[1]);
@@ -94,9 +94,7 @@ void handle_proxy(int fd) {
 
   rio_readinitb(&rio_cilent, fd);
   rio_readlineb(&rio_cilent, buf, MAXLINE);
-//  if (strcmp(buf, "") == 0){
-//    return;
-//  }
+
   sscanf(buf, "%s %s %s", method, uri, version);
   printf("Request line:\n");
   printf("%s", buf);
@@ -111,40 +109,52 @@ void handle_proxy(int fd) {
     // connect to server
     printf("hostname: %s, url: %s, port: %d\n", hostname, path, port_int);
     sprintf(port, "%d", port_int);
-    serverfd = open_clientfd(hostname, port);
-    if (serverfd < 0) {
-      clienterror(fd, hostname, "404", "Not Found", "Proxy could not connect to this server");
-      return;
-    }
-
-    // send request to server
-    rio_readinitb(&rio_server, serverfd);
-
-    sprintf(server_buf, "GET %s HTTP/1.0\r\n", path);
-    rio_writen(serverfd, server_buf, strlen(server_buf));
-    sprintf(server_buf, "Host: %s\r\n", hostname);
-    rio_writen(serverfd, server_buf, strlen(server_buf));
-    rio_writen(serverfd, (void*)user_agent_hdr, strlen(user_agent_hdr));
-    rio_writen(serverfd, (void*)connection_hdr, strlen(connection_hdr));
-    rio_writen(serverfd, (void*)proxy_connection_hdr, strlen(proxy_connection_hdr));
-    rio_writen(serverfd, "\r\n", 2);
 
     // read response from server
     //TODO Cache
     
+    //check cache
     cache_block* block = cache_find_LRU(hostname, path, port_int);
     if (block != NULL) {
       printf("Cache hit!\n");
       rio_writen(fd, block->content, block->size);
+      //test cache
+      // printf("--------------------------------------------------------------------------------\n");
+      // for (int i = 0; i < block->size; i++) {
+      //   if(block->content[i] != 0) {
+      //     printf("%c", block->content[i]);
+      //   } else {
+      //     printf(" ");
+      //   }
+      // }
+      // printf("\n--------------------------------------------------------------------------------\n");
+      //test cache
       printf("Respond %ld bytes object:\n", block->size);
       //Close(serverfd);
       return;
     } else {
       printf("Cache miss!\n");
-      print_cache();
+      //print_cache();
+
+      serverfd = open_clientfd(hostname, port);
+      if (serverfd < 0) {
+        clienterror(fd, hostname, "404", "Not Found", "Proxy could not connect to this server");
+        return;
+      }
+
+      // send request to server
+      rio_readinitb(&rio_server, serverfd);
+
+      sprintf(server_buf, "GET %s HTTP/1.0\r\n", path);
+      rio_writen(serverfd, server_buf, strlen(server_buf));
+      sprintf(server_buf, "Host: %s\r\n", hostname);
+      rio_writen(serverfd, server_buf, strlen(server_buf));
+      rio_writen(serverfd, (void*)user_agent_hdr, strlen(user_agent_hdr));
+      rio_writen(serverfd, (void*)connection_hdr, strlen(connection_hdr));
+      rio_writen(serverfd, (void*)proxy_connection_hdr, strlen(proxy_connection_hdr));
+      rio_writen(serverfd, "\r\n", 2);
       while ((n = rio_readnb(&rio_server, server_buf, MAXLINE)) > 0) {
         obj_len += n;
-        printf("@@@@@%lu----%lu\n", n, obj_len);
         if (obj_len <= MAX_OBJECT_SIZE) {
           memcpy(obj + obj_len - n, server_buf, n);
         }

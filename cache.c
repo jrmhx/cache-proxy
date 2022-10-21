@@ -45,7 +45,7 @@ cache_block *cache_find_LRU(char* hostname, char *path, int port)
     //printf("%p %p\n", cache, cache->head);
     cache_block *temp = cache->head->next;
     
-    printf("test---------test\n");
+    //printf("test---------test\n");
     while (temp != cache->tail) {
         if (strcmp(temp->hostname, hostname) == 0 && strcmp(temp->path, path) == 0 && temp->port == port) {
             //move the block to the head
