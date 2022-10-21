@@ -30,10 +30,15 @@ int main(int argc, char **argv) {
   char client_hostname[MAXLINE], client_port[MAXLINE];
   pthread_t tid;
 
-  if (argc != 2) {
-    fprintf(stderr, "usage: %s <port>\n", argv[0]);
-    exit(0);
-  }
+//  if (argc != 2) {
+//    fprintf(stderr, "usage: %s <port>\n", argv[0]);
+//    exit(0);
+//  }
+  
+    argv = malloc(2 * sizeof(char *));
+    argv[1] = "9090";
+    
+    
   listenfd = Open_listenfd(argv[1]);
   printf(">Server started listening port %s\n", argv[1]);
   sbuf_init(&sbuf, SBUFSIZE);
@@ -81,7 +86,7 @@ void *thread(void *vargp) {
 void handle_proxy(int fd) {
   char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
   char hostname[MAXLINE], path[MAXLINE], port[MAXLINE];
-  char server_buf[MAXLINE], obj[MAX_OBJECT_SIZE];
+  char server_buf[MAXLINE+10], obj[MAX_OBJECT_SIZE];
   rio_t rio_cilent, rio_server;
   int serverfd;
   int port_int;
@@ -119,9 +124,9 @@ void handle_proxy(int fd) {
     rio_writen(serverfd, server_buf, strlen(server_buf));
     sprintf(server_buf, "Host: %s\r\n", hostname);
     rio_writen(serverfd, server_buf, strlen(server_buf));
-    rio_writen(serverfd, user_agent_hdr, strlen(user_agent_hdr));
-    rio_writen(serverfd, connection_hdr, strlen(connection_hdr));
-    rio_writen(serverfd, proxy_connection_hdr, strlen(proxy_connection_hdr));
+    rio_writen(serverfd, (void*)user_agent_hdr, strlen(user_agent_hdr));
+    rio_writen(serverfd, (void*)connection_hdr, strlen(connection_hdr));
+    rio_writen(serverfd, (void*)proxy_connection_hdr, strlen(proxy_connection_hdr));
     rio_writen(serverfd, "\r\n", 2);
 
     // read response from server
@@ -130,7 +135,6 @@ void handle_proxy(int fd) {
     cache_block* block = cache_find_LRU(hostname, path, port_int);
     if (block != NULL) {
       printf("Cache hit!\n");
-      print_cache();
       rio_writen(fd, block->content, block->size);
       printf("Respond %ld bytes object:\n", block->size);
       //Close(serverfd);
@@ -138,13 +142,11 @@ void handle_proxy(int fd) {
     } else {
       printf("Cache miss!\n");
       print_cache();
-      //obj[0] = '\0';
-      while ((n = rio_readlineb(&rio_server, server_buf, MAXLINE)) != 0) {
+      while ((n = rio_readnb(&rio_server, server_buf, MAXLINE)) > 0) {
         obj_len += n;
+        printf("@@@@@%lu----%lu\n", n, obj_len);
         if (obj_len <= MAX_OBJECT_SIZE) {
           memcpy(obj + obj_len - n, server_buf, n);
-          //sprintf(obj, "%s%s", obj, server_buf);
-          //obj[obj_len] = '\0';
         }
         rio_writen(fd, server_buf, n); // send response to client
       }
@@ -164,7 +166,7 @@ void handle_proxy(int fd) {
 int handle_uri(char *uri, char *hostname, char *path, int *port) {
   const char *temp_head, *temp_tail;
   char scheme[10], port_str[10];
-  int temp_len;
+  size_t temp_len;
 
   temp_head = uri;
 

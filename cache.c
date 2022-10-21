@@ -9,7 +9,7 @@
 
 static Cache *cache;
 
-void cache_init() {
+void cache_init(void) {
     cache = Malloc(sizeof(Cache));
     cache->head = Malloc(sizeof(cache_block));
     //printf("%p\n", cache->head);
@@ -18,11 +18,13 @@ void cache_init() {
     //initialize the dummy head and tail
     cache->head->next = cache->tail;
     cache->tail->prev = cache->head;
+    cache->head->prev = NULL;
+    cache->tail->next = NULL;
     cache->c_size = 0;
     pthread_rwlock_init(&cache->cache_lock, NULL);
 }
 
-void cache_deinit() {
+void cache_deinit(void) {
     cache_block *temp = cache->head;
     while (temp != NULL) {
         cache->head = temp->next;
@@ -48,6 +50,7 @@ cache_block *cache_find_LRU(char* hostname, char *path, int port)
         if (strcmp(temp->hostname, hostname) == 0 && strcmp(temp->path, path) == 0 && temp->port == port) {
             //move the block to the head
             pthread_rwlock_unlock(&cache->cache_lock);
+            pthread_rwlock_wrlock(&cache->cache_lock);
 
             pthread_rwlock_wrlock(&temp->block_lock);
             temp->freq = temp->freq + 1;  
@@ -57,9 +60,9 @@ cache_block *cache_find_LRU(char* hostname, char *path, int port)
             temp->prev = cache->head;
             pthread_rwlock_unlock(&temp->block_lock);
 
-            pthread_rwlock_wrlock(&cache->cache_lock);
             cache->head->next->prev = temp;
             cache->head->next = temp;
+            
             pthread_rwlock_unlock(&cache->cache_lock);
             return temp;
         }
@@ -86,17 +89,17 @@ void cache_insert_LRU(char* hostname, char *path, int port, char *content, size_
     temp->next = cache->head->next;
     temp->prev = cache->head;
     //insert the block to the head
-    //cache->head->next->prev = temp;
+    cache->head->next->prev = temp;
     cache->head->next = temp;
     cache->c_size += size;
     //delete the last block if the cache is full
     while (cache->c_size > MAX_CACHE_SIZE) {
-        cache_delete_LRU(cache);
+        cache_delete_LRU();
     }
     pthread_rwlock_unlock(&cache->cache_lock);
 }
 
-void cache_delete_LRU() //delete the last block
+void cache_delete_LRU(void) //delete the last block
 {
     pthread_rwlock_wrlock(&cache->cache_lock);
     cache_block *temp = cache->tail->prev;
@@ -104,20 +107,20 @@ void cache_delete_LRU() //delete the last block
         pthread_rwlock_unlock(&cache->cache_lock);
         return;
     }
-    pthread_rwlock_rdlock(&temp->block_lock);
+    //pthread_rwlock_rdlock(&temp->block_lock);
     temp->prev->next = cache->tail;
     cache->tail->prev = temp->prev;
     cache->c_size -= temp->size;
     if(temp->content != NULL) {
         Free(temp->content);
     }
-    pthread_rwlock_unlock(&temp->block_lock);
+    //pthread_rwlock_unlock(&temp->block_lock);
     pthread_rwlock_destroy(&temp->block_lock);
     Free(temp);
     pthread_rwlock_unlock(&cache->cache_lock);
 }
 
-void print_cache() {
+void print_cache(void) {
     cache_block *temp = cache->head->next;
     while (temp != cache->tail) {
         printf("! hostname: %s, path: %s, port: %d, size: %ld, freq: %d\n", temp->hostname, temp->path, temp->port, temp->size, temp->freq);
