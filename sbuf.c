@@ -41,7 +41,7 @@ void sbuf_insert(sbuf_t *sp, int item) { //slot - 1; item + 1
   sp->buf[(++sp->rear)%(sp->n)] = item;  /* Insert the item */
   sp->slot_num--;
   sp->item_num++;
-  pthread_cond_signal(&sp->items); // wake up
+  pthread_cond_broadcast(&sp->items); // wake up
   pthread_mutex_unlock(&sp->mutex);  
 }
 
@@ -61,7 +61,7 @@ int sbuf_remove(sbuf_t *sp) { //slot + 1; item - 1
   item = sp->buf[(++sp->front)%(sp->n)];  /* Remove the item */
   sp->slot_num++;
   sp->item_num--;
-  pthread_cond_signal(&sp->slots);  // wake up
+  pthread_cond_broadcast(&sp->slots);  // wake up
   pthread_mutex_unlock(&sp->mutex);
   return item;
 }
