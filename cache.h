@@ -26,13 +26,15 @@ typedef struct cache { // the cache is a double linked list
 
 void cache_init(void);
 void cache_deinit(void);
+void print_cache(void); // for debugging
+
 void cache_insert_LRU(char* hostname, char *path, int port, char *content, size_t size);
 cache_block *cache_find_LRU( char* hostname, char *path, int port);
 void cache_delete_LRU(void);
-void print_cache(void);
 
-void cache_insert_LFU(char *uri, char *content, size_t size);
-char *cache_find_LFU(char *uri);
+
+void cache_insert_LFU(char* hostname, char *path, int port, char *content, size_t size);
+cache_block *cache_find_LFU(char* hostname, char *path, int port);
 void cache_delete_LFU(void);
 
 

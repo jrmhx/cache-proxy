@@ -120,6 +120,76 @@ void cache_delete_LRU(void) //delete the last block
     pthread_rwlock_unlock(&cache->cache_lock);
 }
 
+void cache_insert_LFU(char* hostname, char *path, int port, char *content, size_t size)
+{
+    pthread_rwlock_wrlock(&cache->cache_lock);
+    cache_block *temp = Malloc(sizeof(cache_block));
+    pthread_rwlock_init(&temp->block_lock, NULL);
+    //temp->hostname = Malloc(strlen(hostname) + 1);
+    strcpy(temp->hostname, hostname);
+    //temp->path = Malloc(strlen(path) + 1);
+    strcpy(temp->path, path);
+    temp->port = port;
+    temp->content = Malloc(size);
+    memcpy(temp->content, content, size);
+    temp->size = size;
+    temp->freq = 0;
+    temp->next = cache->head->next;
+    temp->prev = cache->head;
+    //insert the block to the head
+    cache->head->next->prev = temp;
+    cache->head->next = temp;
+    cache->c_size += size;
+    //delete the last block if the cache is full
+    while (cache->c_size > MAX_CACHE_SIZE) {
+        cache_delete_LFU();
+    }
+    pthread_rwlock_unlock(&cache->cache_lock);
+}
+cache_block *cache_find_LFU(char* hostname, char *path, int port)
+{
+    pthread_rwlock_rdlock(&cache->cache_lock);
+    cache_block *temp = cache->head->next;
+    while (temp != cache->tail) {
+        if (strcmp(temp->hostname, hostname) == 0 && strcmp(temp->path, path) == 0 && temp->port == port) {
+            pthread_rwlock_wrlock(&temp->block_lock);
+            temp->freq = temp->freq + 1;
+            pthread_rwlock_unlock(&temp->block_lock);
+            pthread_rwlock_unlock(&cache->cache_lock);
+            return temp;
+        }
+        temp = temp->next;
+    }
+    pthread_rwlock_unlock(&cache->cache_lock);
+    return NULL;
+}
+void cache_delete_LFU(void)
+{
+    pthread_rwlock_wrlock(&cache->cache_lock);
+    cache_block *temp = cache->head->next;
+    cache_block *min = temp;
+    while (temp != cache->tail) {
+        if (temp->freq < min->freq) {
+            min = temp;
+        }
+        temp = temp->next;
+    }
+    if (min == cache->tail) {
+        pthread_rwlock_unlock(&cache->cache_lock);
+        return;
+    }
+    min->prev->next = min->next;
+    min->next->prev = min->prev;
+    cache->c_size -= min->size;
+    if (min->content != NULL) {
+        Free(min->content);
+    }
+    pthread_rwlock_destroy(&min->block_lock);
+    Free(min);
+    pthread_rwlock_unlock(&cache->cache_lock);
+}
+
+
 void print_cache(void) {
     cache_block *temp = cache->head->next;
     while (temp != cache->tail) {

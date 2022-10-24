@@ -22,6 +22,9 @@ int handle_uri(char *uri, char *hostname, char *path, int *port);
 void handle_proxy(int fd);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);
 void *thread(void *vargp);
+void (*cache_insert)(char* hostname, char *path, int port, char *content, size_t size) = cache_insert_LRU; //default is LRU replacement
+cache_block* (*cache_find)(char* hostname, char *path, int port) = cache_find_LRU; //default is LRU replacement
+int cache_state = 0; //default is LRU replacement
 
 int main(int argc, char **argv) {
   int i, listenfd, connfd;
@@ -30,13 +33,19 @@ int main(int argc, char **argv) {
   char client_hostname[MAXLINE], client_port[MAXLINE];
   pthread_t tid;
 
-  if (argc != 2) {
+  if (argc < 2) {
     fprintf(stderr, "usage: %s <port>\n", argv[0]);
     exit(0);
   }
   
-    // argv = malloc(2 * sizeof(char *));
-    // argv[1] = "9090";
+  if (argc == 3) {
+    if (strcasecmp(argv[2], "LFU") == 0) {
+        cache_insert = cache_insert_LFU;
+        cache_find = cache_find_LFU;
+        cache_state = 1;
+    }
+  }
+
     
     
   listenfd = Open_listenfd(argv[1]);
@@ -46,6 +55,11 @@ int main(int argc, char **argv) {
 
   cache_init();
   printf(">Cache initialized\n");
+    if (cache_state == 0) {
+        printf(">Cache replacement policy: LRU\n");
+    } else {
+        printf(">Cache replacement policy: LFU\n");
+    }
 
   for (i = 0; i < NTHREADS; i++){     /* Create worker threads */
     int *id = Malloc(sizeof(int));
@@ -114,7 +128,7 @@ void handle_proxy(int fd) {
     //TODO Cache
     
     //check cache
-    cache_block* block = cache_find_LRU(hostname, path, port_int);
+    cache_block* block = cache_find(hostname, path, port_int);
     if (block != NULL) {
       printf("Cache hit!\n");
       rio_writen(fd, block->content, block->size);
@@ -161,7 +175,7 @@ void handle_proxy(int fd) {
         rio_writen(fd, server_buf, n); // send response to client
       }
       if (obj_len <= MAX_OBJECT_SIZE) {
-        cache_insert_LRU(hostname, path, port_int, obj, obj_len);
+        cache_insert(hostname, path, port_int, obj, obj_len);
         printf("Cache insert %ld bytes object:\n", obj_len);
       } else {
         printf("Object too large to cache!\n");
