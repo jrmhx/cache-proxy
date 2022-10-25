@@ -21,10 +21,12 @@ static const char *proxy_connection_hdr = "Proxy-Connection: close\r\n";
 int handle_uri(char *uri, char *hostname, char *path, int *port);
 void handle_proxy(int fd);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);
-void *thread(void *vargp);
-void (*cache_insert)(char* hostname, char *path, int port, char *content, size_t size) = cache_insert_LRU; //default is LRU replacement
-cache_block* (*cache_find)(char* hostname, char *path, int port) = cache_find_LRU; //default is LRU replacement
-int cache_state = 0; //default is LRU replacement
+void *thread(void *vargp);  //working thread routine
+
+// if the user input miss the cache replacement policy, then use LRU as default
+void (*cache_insert)(char* hostname, char *path, int port, char *content, size_t size) = cache_insert_LRU;
+cache_block* (*cache_find)(char* hostname, char *path, int port) = cache_find_LRU;
+int CACHE_STATE = 0; // 0 means LRU and 1 means LFU
 
 int main(int argc, char **argv) {
   int i, listenfd, connfd;
@@ -42,7 +44,7 @@ int main(int argc, char **argv) {
     if (strcasecmp(argv[2], "LFU") == 0) {
         cache_insert = cache_insert_LFU;
         cache_find = cache_find_LFU;
-        cache_state = 1;
+        CACHE_STATE = 1;
     }
   }
 
@@ -55,7 +57,7 @@ int main(int argc, char **argv) {
 
   cache_init();
   printf(">Cache initialized\n");
-    if (cache_state == 0) {
+    if (CACHE_STATE == 0) {
         printf(">Cache replacement policy: LRU\n");
     } else {
         printf(">Cache replacement policy: LFU\n");
@@ -70,6 +72,7 @@ int main(int argc, char **argv) {
 
 
   Signal(SIGPIPE, SIG_IGN);  // Ignore SIGPIPE
+
   while (1) {
     clientlen = sizeof(struct sockaddr_storage);  /* Important! */
     connfd = Accept(listenfd, (SA *) &clientaddr, &clientlen);
@@ -100,7 +103,7 @@ void *thread(void *vargp) {
 void handle_proxy(int fd) {
   char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
   char hostname[MAXLINE], path[MAXLINE], port[MAXLINE];
-  char server_buf[MAXLINE+10], obj[MAX_OBJECT_SIZE];
+  char server_buf[MAXLINE], obj[MAX_OBJECT_SIZE];
   rio_t rio_cilent, rio_server;
   int serverfd;
   int port_int;
@@ -125,24 +128,12 @@ void handle_proxy(int fd) {
     sprintf(port, "%d", port_int);
 
     // read response from server
-    //TODO Cache
     
-    //check cache
+    //check cache hit -> return cache content | miss -> socket connect to server
     cache_block* block = cache_find(hostname, path, port_int);
     if (block != NULL) {
       printf("Cache hit!\n");
       rio_writen(fd, block->content, block->size);
-      //test cache
-      // printf("--------------------------------------------------------------------------------\n");
-      // for (int i = 0; i < block->size; i++) {
-      //   if(block->content[i] != 0) {
-      //     printf("%c", block->content[i]);
-      //   } else {
-      //     printf(" ");
-      //   }
-      // }
-      // printf("\n--------------------------------------------------------------------------------\n");
-      //test cache
       printf("Respond %ld bytes object:\n", block->size);
       //Close(serverfd);
       return;
@@ -159,6 +150,7 @@ void handle_proxy(int fd) {
       // send request to server
       rio_readinitb(&rio_server, serverfd);
 
+      // send request header
       sprintf(server_buf, "GET %s HTTP/1.0\r\n", path);
       rio_writen(serverfd, server_buf, strlen(server_buf));
       sprintf(server_buf, "Host: %s\r\n", hostname);
@@ -167,6 +159,9 @@ void handle_proxy(int fd) {
       rio_writen(serverfd, (void*)connection_hdr, strlen(connection_hdr));
       rio_writen(serverfd, (void*)proxy_connection_hdr, strlen(proxy_connection_hdr));
       rio_writen(serverfd, "\r\n", 2);
+      // finish sending request header
+
+      // read response header and body
       while ((n = rio_readnb(&rio_server, server_buf, MAXLINE)) > 0) {
         obj_len += n;
         if (obj_len <= MAX_OBJECT_SIZE) {
@@ -178,7 +173,7 @@ void handle_proxy(int fd) {
         cache_insert(hostname, path, port_int, obj, obj_len);
         printf("Cache insert %ld bytes object:\n", obj_len);
       } else {
-        printf("Object too large to cache!\n");
+        printf("Cache failed, object over limit size!\n");
       }
       printf("Respond %ld bytes object:\n", obj_len);
       //Close(serverfd);
@@ -187,6 +182,10 @@ void handle_proxy(int fd) {
 }
 
 
+/*
+ *handle the uri that user sends,
+ * return 1 if it can parse successfully or
+ * return 0 if the uri can't be  handled*/
 int handle_uri(char *uri, char *hostname, char *path, int *port) {
   const char *temp_head, *temp_tail;
   char scheme[10], port_str[10];
@@ -256,7 +255,7 @@ int handle_uri(char *uri, char *hostname, char *path, int *port) {
   }
 }
 
-
+//send error message to user function
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg) {
   char buf[MAXLINE];
 

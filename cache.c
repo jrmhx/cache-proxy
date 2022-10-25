@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "csapp.h"
 #include "cache.h"
@@ -12,10 +11,7 @@ static Cache *cache;
 void cache_init(void) {
     cache = Malloc(sizeof(Cache));
     cache->head = Malloc(sizeof(cache_block));
-    //printf("%p\n", cache->head);
     cache->tail = Malloc(sizeof(cache_block));
-    //printf("%p\n", cache->tail);
-    //initialize the dummy head and tail
     cache->head->next = cache->tail;
     cache->tail->prev = cache->head;
     cache->head->prev = NULL;
@@ -42,7 +38,6 @@ void cache_deinit(void) {
 cache_block *cache_find_LRU(char* hostname, char *path, int port)
 {
     pthread_rwlock_rdlock(&cache->cache_lock);
-    //printf("%p %p\n", cache, cache->head);
     cache_block *temp = cache->head->next;
     
     //printf("test---------test\n");
@@ -77,9 +72,7 @@ void cache_insert_LRU(char* hostname, char *path, int port, char *content, size_
     pthread_rwlock_wrlock(&cache->cache_lock);
     cache_block *temp = Malloc(sizeof(cache_block));
     pthread_rwlock_init(&temp->block_lock, NULL);
-    //temp->hostname = Malloc(strlen(hostname) + 1);
     strcpy(temp->hostname, hostname);
-    //temp->path = Malloc(strlen(path) + 1);
     strcpy(temp->path, path);
     temp->port = port;
     temp->content = Malloc(size);
@@ -107,14 +100,12 @@ void cache_delete_LRU(void) //delete the last block
         pthread_rwlock_unlock(&cache->cache_lock);
         return;
     }
-    //pthread_rwlock_rdlock(&temp->block_lock);
     temp->prev->next = cache->tail;
     cache->tail->prev = temp->prev;
     cache->c_size -= temp->size;
     if(temp->content != NULL) {
         Free(temp->content);
     }
-    //pthread_rwlock_unlock(&temp->block_lock);
     pthread_rwlock_destroy(&temp->block_lock);
     Free(temp);
     pthread_rwlock_unlock(&cache->cache_lock);
@@ -125,9 +116,7 @@ void cache_insert_LFU(char* hostname, char *path, int port, char *content, size_
     pthread_rwlock_wrlock(&cache->cache_lock);
     cache_block *temp = Malloc(sizeof(cache_block));
     pthread_rwlock_init(&temp->block_lock, NULL);
-    //temp->hostname = Malloc(strlen(hostname) + 1);
     strcpy(temp->hostname, hostname);
-    //temp->path = Malloc(strlen(path) + 1);
     strcpy(temp->path, path);
     temp->port = port;
     temp->content = Malloc(size);
