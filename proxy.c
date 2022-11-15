@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "usage: %s <port>\n", argv[0]);
     exit(0);
   }
-  
+
   if (argc == 3) {
     if (strcasecmp(argv[2], "LFU") == 0) {
         cache_insert = cache_insert_LFU;
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
     }
   }
 
-    
+//char* port = "9090";
     
   listenfd = Open_listenfd(argv[1]);
   printf(">Server started listening port %s\n", argv[1]);

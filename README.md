@@ -1,4 +1,6 @@
-# comp2310-assignment-2
+# Web Proxy with Cache
+
+## ANU 2022 s2 comp2310-assignment-2 / CMU CS213, Fall 2010 Lab Assignment L7
 
 ## Reference
 1. [Condition variables in C](https://www.youtube.com/watch?v=0sVGnxg6Z3k)
