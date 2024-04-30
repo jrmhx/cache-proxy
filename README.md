@@ -1,8 +1,6 @@
 # Web Proxy with Cache
 
-## ANU 2022 s2 comp2310-assignment-2 / CMU CS213, Fall 2010 Lab Assignment L7
-
-## Author: Jeremiah Hsing (Junming Xing)
+## Author: Jeremiah Xing
 
 ## Intro
 
