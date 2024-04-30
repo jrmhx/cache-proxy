@@ -1,21 +1,26 @@
-MIT License
+License Agreement
 
-Copyright (c) 2023 Jeremiah Hsing
+1. Introduction
+This License Agreement ("Agreement") is made between [Junming Xing ("Licensor")] and you, the user ("Licensee"), covering your use of Gopher Indexer ("Software"). By installing, copying, or otherwise using the Software, you agree to be bound by the terms of this Agreement.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+2. Grant of License
+Licensor hereby grants Licensee a non-exclusive, non-transferable, non-sublicensable license to use the Software for personal, non-commercial purposes subject to the terms of this Agreement.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+3. Restrictions
+Licensee shall not:
+a. Modify, translate, adapt, or otherwise create derivative works or improvements, whether or not patentable, of the Software.
+b. Combine the Software or any part thereof with, or incorporate the Software or any part thereof in, any other programs.
+c. Reverse engineer, disassemble, decompile, decode, or otherwise attempt to derive or gain access to the source code of the Software or any part thereof.
+d. Rent, lease, lend, sell, sublicense, assign, distribute, publish, transfer, or otherwise make available the Software, or any features or functionality of the Software, to any third party for any reason.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+4. Termination
+This Agreement is effective until terminated. It will also terminate immediately if you fail to comply with any term of this Agreement. Upon termination, you must cease all use of the Software and destroy all copies.
+
+5. Disclaimer of Warranty
+The Software is provided to Licensee "AS IS" without warranties of any kind. Licensor makes no warranties, claims, or representations with respect to the Software, whether expressed, implied, or statutory, including, without limitation, warranties of quality, performance, non-infringement, merchantability, or fitness for a particular purpose.
+
+6. Limitation of Liability
+In no event will Licensor be liable for any consequential, incidental, indirect, special, or punitive damages whatsoever arising out of the use of or inability to use the Software, even if advised of the possibility of such damages.
+
+7. Governing Law
+This Agreement shall be governed by and construed in accordance with the laws of Australia.
